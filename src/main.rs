@@ -2,11 +2,11 @@ use std::error::Error;
 use std::io::{Write, stdout, self};
 use std::sync::mpsc;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use crossterm::event::{self, Event, KeyCode};
 use invaders::frame::{new_frame, Drawable};
 use invaders::player::Player;
-use invaders::{frame, render, player};
+use invaders::{frame, render};
 use rusty_audio::Audio;
 use crossterm::terminal;
 use crossterm::terminal::EnterAlternateScreen;
@@ -47,15 +47,25 @@ fn main() -> Result <(), Box<dyn Error>> {
 
     // Game loop
     let mut player = Player::new();
+    let mut instant = Instant::now();
 
     'gameloop: loop {
         // Per-frame init
+        let delta = instant.elapsed();
+        instant = Instant::now();
         let mut curr_frame = new_frame();
+
+        // Input
         while event::poll(Duration::default())? {
             if let Event::Key(key_event) = event::read()? {
                 match key_event.code {
                     KeyCode::Left => player.move_left(),
                     KeyCode::Right => player.move_right(),
+                    KeyCode::Char(' ') | KeyCode::Enter => {
+                        if player.shoot() {
+                            audio.play("pew");
+                        }
+                    }
                     KeyCode::Esc | KeyCode::Char('q') => {
                         audio.play("lose");
                         break 'gameloop;
@@ -64,6 +74,9 @@ fn main() -> Result <(), Box<dyn Error>> {
                 }
             }
         }
+
+        // Updates
+        player.update(delta);
 
         // Draw and render
         player.draw(&mut curr_frame);

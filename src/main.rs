@@ -91,5 +91,6 @@ fn main() -> Result <(), Box<dyn Error>> {
     execute!(stdout, cursor::Show)?;
     execute!(stdout, LeaveAlternateScreen)?;
     terminal::disable_raw_mode()?;
+    
     Ok(())
 }
